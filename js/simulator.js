@@ -3,9 +3,8 @@
    Feature 5: calculate required final exam score to achieve target grade.
    ============================================================ */
 
-import { SCALES, buildSelectOptions, getPoints } from './gradeScale.js';
+import { buildSelectOptions } from './gradeScale.js';
 
-// Korean standard: letter grade lower bounds as 100-point equivalent
 const GRADE_LOWER_BOUND_45 = {
   'A+': 95, 'A0': 90, 'B+': 85, 'B0': 80,
   'C+': 75, 'C0': 70, 'D+': 65, 'D0': 60, 'F': 0
@@ -24,16 +23,15 @@ function getGradeLowerBound(scale, grade) {
 
 export function calcRequiredFinalScore({ midtermScore, midtermWeight, targetGrade, scale }) {
   const mid    = Number(midtermScore);
-  const mw     = Number(midtermWeight);       // 0-100
-  const fw     = 100 - mw;                    // final weight
+  const mw     = Number(midtermWeight);
+  const fw     = 100 - mw;
   const target = getGradeLowerBound(scale, targetGrade);
 
   if (fw <= 0) return { required: null, status: 'invalid', message: '기말 비중이 0%예요. 중간 비중을 낮춰주세요.' };
-  if (target === 0 && targetGrade === 'F')  {
+  if (target === 0 && targetGrade === 'F') {
     return { required: 0, status: 'easy', message: '어떤 점수를 받아도 F가 나와요 (목표가 F인가요?)' };
   }
 
-  // required = (target - midterm * midtermWeight/100) / (finalWeight/100)
   const required = (target - mid * (mw / 100)) / (fw / 100);
 
   if (required <= 0) {
@@ -47,9 +45,9 @@ export function calcRequiredFinalScore({ midtermScore, midtermWeight, targetGrad
     };
   }
   if (required >= 90) {
-    return { required, status: 'hard', message: `기말에 매우 높은 점수가 필요해요 💪 집중 마무리!` };
+    return { required, status: 'hard', message: '기말에 매우 높은 점수가 필요해요 💪 집중 마무리!' };
   }
-  return { required, status: 'achievable', message: `충분히 달성 가능한 점수예요. 화이팅 🔥` };
+  return { required, status: 'achievable', message: '충분히 달성 가능한 점수예요. 화이팅 🔥' };
 }
 
 // ── DOM Binding ───────────────────────────────────────────────
@@ -64,9 +62,12 @@ export function renderSimulatorSection() {
     updateSimResult();
   });
 
-  ['sim-midterm', 'sim-midterm-weight', 'sim-target-grade'].forEach(id => {
+  ['sim-midterm', 'sim-midterm-weight'].forEach(id => {
     document.getElementById(id)?.addEventListener('input', updateSimResult);
   });
+
+  // Use 'change' for select (programmatic value sets don't fire 'input')
+  document.getElementById('sim-target-grade')?.addEventListener('change', updateSimResult);
 }
 
 function populateSimGradeSelect(scale) {
@@ -74,8 +75,7 @@ function populateSimGradeSelect(scale) {
   if (!sel) return;
   const opts = buildSelectOptions(scale);
   sel.innerHTML = opts.map(o => `<option value="${o.value}">${o.label}</option>`).join('');
-  // Default to B+ for 4.5, B for 4.3
-  const defaultGrade = scale === '4.3' ? 'B+' : 'B+';
+  const defaultGrade = 'B+';
   if ([...sel.options].some(o => o.value === defaultGrade)) sel.value = defaultGrade;
 }
 
@@ -101,7 +101,7 @@ function updateSimResult() {
   if (!resultEl || !valueEl || !messageEl) return;
 
   resultEl.style.display = '';
-  valueEl.className = 'result-value';
+  valueEl.className = 'result-value num';
 
   if (status === 'impossible') valueEl.classList.add('result-impossible');
   else if (status === 'easy')  valueEl.classList.add('result-easy');

@@ -4,7 +4,7 @@
    ============================================================ */
 
 import { loadData, saveData } from './storage.js';
-import { showToast } from './ui.js';
+import { showToast, showConfirmModal } from './ui.js';
 
 // ── Export ────────────────────────────────────────────────────
 
@@ -137,10 +137,15 @@ export function importFromUrl() {
 // ── Reset ─────────────────────────────────────────────────────
 
 export function resetAllData() {
-  if (!confirm('모든 학기 데이터를 초기화할까요?\n이 작업은 되돌릴 수 없어요.')) return;
-  localStorage.removeItem('gradedr_data');
-  showToast('데이터가 초기화됐어요. 새로고침 할게요', 'info', 2500);
-  setTimeout(() => location.reload(), 2600);
+  showConfirmModal({
+    title: '데이터 초기화',
+    desc:  '모든 학기와 과목 데이터가 삭제돼요. 이 작업은 되돌릴 수 없어요.',
+    onConfirm: () => {
+      localStorage.removeItem('gradedr_data');
+      showToast('데이터가 초기화됐어요. 새로고침 할게요', 'info', 2500);
+      setTimeout(() => location.reload(), 2600);
+    }
+  });
 }
 
 // ── DOM Binding ───────────────────────────────────────────────
