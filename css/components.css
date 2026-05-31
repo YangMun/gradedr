@@ -655,6 +655,12 @@
 }
 
 /* ── Progress Bar (졸업 학점) ─────────────────────────────── */
+.graduation-bar-wrap {
+  margin-top: var(--s-4);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--color-border-light);
+}
+
 .progress-wrap {
   display: flex;
   flex-direction: column;

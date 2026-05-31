@@ -39,20 +39,35 @@ export function renderTargetSection() {
   const ids = ['t-current-gpa', 't-earned-credits', 't-target-gpa', 't-remaining-credits', 't-scale'];
   ids.forEach(id => {
     document.getElementById(id)?.addEventListener('input', updateTargetResult);
+    document.getElementById(id)?.addEventListener('change', updateTargetResult);
   });
 
-  // Pre-fill from current cumulative GPA
   prefillFromCurrentData();
+
+  // Reactive prefill: re-fill when navigating to this section
+  window.addEventListener('gradedr:section-change', e => {
+    if (e.detail?.sectionId === 'section-target') {
+      prefillFromCurrentData();
+      updateTargetResult();
+    }
+  });
+
+  // Reactive prefill: re-fill when subject data changes
+  window.addEventListener('gradedr:data-changed', () => {
+    prefillFromCurrentData();
+    updateTargetResult();
+  });
 }
 
 function prefillFromCurrentData() {
   const semesters = getSemesters();
   const { gpa, totalCredits } = calcCumulativeGpa(semesters);
   if (totalCredits > 0) {
-    const gpaEl     = document.getElementById('t-current-gpa');
-    const credEl    = document.getElementById('t-earned-credits');
-    if (gpaEl  && !gpaEl.value)  gpaEl.value  = gpa.toFixed(2);
-    if (credEl && !credEl.value) credEl.value = totalCredits;
+    const gpaEl  = document.getElementById('t-current-gpa');
+    const credEl = document.getElementById('t-earned-credits');
+    // Always update (not just when empty) so it stays in sync
+    if (gpaEl)  gpaEl.value  = gpa.toFixed(2);
+    if (credEl) credEl.value = totalCredits;
   }
 }
 
@@ -80,7 +95,7 @@ function updateTargetResult() {
 
   resultEl.style.display = '';
 
-  valueEl.className = 'result-value';
+  valueEl.className = 'result-value num';
   if (status === 'impossible') valueEl.classList.add('result-impossible');
   else if (status === 'easy')  valueEl.classList.add('result-easy');
 

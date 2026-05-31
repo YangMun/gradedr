@@ -1,6 +1,6 @@
 /* ============================================================
    GradeR - UI Module
-   Theme toggle, section navigation, toast notifications.
+   Theme toggle, section navigation, toast, modal helpers.
    ============================================================ */
 
 import { getSettings, patchSettings } from './storage.js';
@@ -28,7 +28,7 @@ function applyTheme(theme) {
 
   const metaThemeColor = document.querySelector('meta[name="theme-color"]');
   if (metaThemeColor) {
-    metaThemeColor.setAttribute('content', theme === 'dark' ? '#1a1d2e' : '#4361ee');
+    metaThemeColor.setAttribute('content', theme === 'dark' ? '#0a0a0a' : '#6366f1');
   }
 }
 
@@ -64,7 +64,6 @@ export function showSection(sectionId) {
 
   patchSettings({ activeSection: sectionId });
 
-  // Notify other modules (e.g. charts lazy-init)
   window.dispatchEvent(new CustomEvent('gradedr:section-change', { detail: { sectionId } }));
 }
 
@@ -90,24 +89,88 @@ export function showToast(message, type = 'info', duration = 3000) {
   toast.innerHTML = `<i class="ph-bold ${TOAST_ICONS[type] || TOAST_ICONS.info}"></i><span>${message}</span>`;
 
   container.appendChild(toast);
-
-  // Trigger enter animation on next frame
   requestAnimationFrame(() => requestAnimationFrame(() => toast.classList.add('toast-show')));
 
-  setTimeout(() => {
-    toast.classList.remove('toast-show');
-    toast.addEventListener('transitionend', () => toast.remove(), { once: true });
+  setTimeout(() => dismissToast(toast), duration);
+}
+
+export function showUndoToast(message, onUndo, duration = 4000) {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+
+  const id = ++_toastId;
+  const toast = document.createElement('div');
+  toast.className = 'toast toast-info';
+  toast.id = `toast-${id}`;
+  toast.innerHTML = `
+    <i class="ph-bold ph-trash"></i>
+    <span>${message}</span>
+    <button class="toast-action">취소</button>
+  `;
+
+  let undid = false;
+  toast.querySelector('.toast-action').addEventListener('click', () => {
+    undid = true;
+    dismissToast(toast);
+    onUndo();
+  });
+
+  container.appendChild(toast);
+  requestAnimationFrame(() => requestAnimationFrame(() => toast.classList.add('toast-show')));
+
+  const timer = setTimeout(() => {
+    if (!undid) dismissToast(toast);
   }, duration);
+
+  toast.querySelector('.toast-action').addEventListener('click', () => clearTimeout(timer));
+}
+
+function dismissToast(toast) {
+  toast.classList.remove('toast-show');
+  toast.addEventListener('transitionend', () => toast.remove(), { once: true });
 }
 
 // === Modal helpers ===
 
 export function openModal(id) {
   const el = document.getElementById(id);
-  if (el) el.style.display = 'flex';
+  if (!el) return;
+  el.style.display = 'flex';
 }
 
 export function closeModal(id) {
   const el = document.getElementById(id);
-  if (el) el.style.display = 'none';
+  if (!el) return;
+  el.style.display = 'none';
+}
+
+export function showConfirmModal({ title, desc, onConfirm }) {
+  const titleEl = document.getElementById('confirm-modal-title');
+  const descEl  = document.getElementById('confirm-modal-desc');
+  if (titleEl) titleEl.textContent = title;
+  if (descEl)  descEl.textContent  = desc;
+
+  // Replace buttons to remove stale listeners
+  const oldOk     = document.getElementById('confirm-modal-ok');
+  const oldCancel = document.getElementById('confirm-modal-cancel');
+
+  const newOk = oldOk.cloneNode(true);
+  const newCancel = oldCancel.cloneNode(true);
+  oldOk.replaceWith(newOk);
+  oldCancel.replaceWith(newCancel);
+
+  newOk.addEventListener('click', () => {
+    closeModal('confirm-modal');
+    onConfirm();
+  });
+  newCancel.addEventListener('click', () => closeModal('confirm-modal'));
+
+  const overlay = document.getElementById('confirm-modal');
+  const overlayHandler = e => {
+    if (e.target === overlay) closeModal('confirm-modal');
+  };
+  overlay.removeEventListener('click', overlayHandler);
+  overlay.addEventListener('click', overlayHandler);
+
+  openModal('confirm-modal');
 }

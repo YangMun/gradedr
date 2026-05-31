@@ -9,7 +9,7 @@ import {
 import {
   setActiveSemId, attachSubjectFormHandler, renderSubjectList, updateGpaDisplay
 } from './calculator.js';
-import { showToast, openModal, closeModal } from './ui.js';
+import { showToast, openModal, closeModal, showConfirmModal } from './ui.js';
 
 // ── Init ──────────────────────────────────────────────────────
 
@@ -24,7 +24,6 @@ export function initSemesters() {
   renderTabs(semesters, targetId);
   if (targetId) activateSemester(targetId);
 
-  // "+" button → open add semester modal
   document.getElementById('add-semester-btn')?.addEventListener('click', () => {
     document.getElementById('semester-label-input').value = '';
     openModal('semester-modal');
@@ -47,22 +46,30 @@ export function renderTabs(semesters, activeId) {
     tab.setAttribute('role', 'tab');
     tab.setAttribute('aria-selected', sem.id === activeId ? 'true' : 'false');
     tab.dataset.semId = sem.id;
+    // Use <span role="button"> instead of nested <button> to avoid invalid HTML nesting
     tab.innerHTML = `
       <span class="tab-label">${escHtml(sem.label)}</span>
-      <button class="tab-delete" aria-label="${escHtml(sem.label)} 삭제" tabindex="-1">
+      <span class="tab-delete" role="button" tabindex="-1" aria-label="${escHtml(sem.label)} 삭제">
         <i class="ph-bold ph-x"></i>
-      </button>
+      </span>
     `;
 
     tab.addEventListener('click', e => {
-      // Ignore clicks on delete button
       if (e.target.closest('.tab-delete')) return;
       activateSemester(sem.id);
     });
 
-    tab.querySelector('.tab-delete').addEventListener('click', e => {
+    const deleteSpan = tab.querySelector('.tab-delete');
+    deleteSpan.addEventListener('click', e => {
       e.stopPropagation();
       deleteSemester(sem.id);
+    });
+    deleteSpan.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        e.stopPropagation();
+        deleteSemester(sem.id);
+      }
     });
 
     bar.appendChild(tab);
@@ -111,16 +118,21 @@ export function deleteSemester(semId) {
   }
 
   const sem = semesters.find(s => s.id === semId);
-  if (!confirm(`'${sem?.label}' 학기를 삭제할까요?\n(과목 데이터도 모두 삭제됩니다)`)) return;
 
-  const remaining = semesters.filter(s => s.id !== semId);
-  saveSemesters(remaining);
+  showConfirmModal({
+    title: '학기 삭제',
+    desc:  `'${sem?.label}' 학기를 삭제하면 모든 과목 데이터도 함께 삭제돼요.`,
+    onConfirm: () => {
+      const remaining = getSemesters().filter(s => s.id !== semId);
+      saveSemesters(remaining);
 
-  const idx     = semesters.findIndex(s => s.id === semId);
-  const nextId  = remaining[Math.min(idx, remaining.length - 1)]?.id;
-  renderTabs(remaining, nextId);
-  if (nextId) activateSemester(nextId);
-  showToast(`학기가 삭제됐어요`, 'info', 2000);
+      const idx    = semesters.findIndex(s => s.id === semId);
+      const nextId = remaining[Math.min(idx, remaining.length - 1)]?.id;
+      renderTabs(remaining, nextId);
+      if (nextId) activateSemester(nextId);
+      showToast('학기가 삭제됐어요', 'info', 2000);
+    }
+  });
 }
 
 // ── Semester Modal Binding ────────────────────────────────────

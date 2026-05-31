@@ -5,7 +5,7 @@
    ============================================================ */
 
 const STORAGE_KEY = 'gradedr_data';
-const CURRENT_VERSION = 1;
+const CURRENT_VERSION = 2;
 
 function makeDefaultData() {
   return {
@@ -14,7 +14,8 @@ function makeDefaultData() {
       theme: 'light',
       defaultGradeScale: '4.5',
       activeSection: 'section-calculator',
-      activeSemesterId: 'sem_1_1'
+      activeSemesterId: 'sem_1_1',
+      graduationCredits: 0
     },
     semesters: [
       { id: 'sem_1_1', label: '1-1학기', gradeScale: '4.5', subjects: [] },
@@ -28,8 +29,26 @@ function makeDefaultData() {
 function migrateIfNeeded(data) {
   if (!data || typeof data !== 'object') return makeDefaultData();
   if (typeof data.version !== 'number') return makeDefaultData();
-  // Placeholder for future schema migrations:
-  // if (data.version < 2) { /* transform */ data.version = 2; }
+
+  // v1 → v2: add graduationCredits to settings, add type field to subjects
+  if (data.version < 2) {
+    if (!data.settings) data.settings = {};
+    if (data.settings.graduationCredits === undefined) {
+      data.settings.graduationCredits = 0;
+    }
+    if (Array.isArray(data.semesters)) {
+      data.semesters.forEach(sem => {
+        if (Array.isArray(sem.subjects)) {
+          sem.subjects.forEach(s => {
+            if (!s.type) s.type = 'major';
+          });
+        }
+      });
+    }
+    data.version = 2;
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (_) {}
+  }
+
   return data;
 }
 
