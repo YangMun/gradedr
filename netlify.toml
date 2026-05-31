@@ -1,0 +1,39 @@
+# Netlify deployment configuration
+# Static site - no build command needed
+
+[build]
+  publish = "."
+
+# ── Cache Headers ──────────────────────────────────────────────
+# index.html: always serve fresh (no cache)
+[[headers]]
+  for = "/index.html"
+    [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# CSS: 1-hour cache (no filename hashing)
+[[headers]]
+  for = "/css/*"
+    [headers.values]
+    Cache-Control = "public, max-age=3600"
+
+# JS: 1-hour cache
+[[headers]]
+  for = "/js/*"
+    [headers.values]
+    Cache-Control = "public, max-age=3600"
+
+# Favicon: 1-week cache
+[[headers]]
+  for = "/favicon.svg"
+    [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+# ── Security Headers ───────────────────────────────────────────
+[[headers]]
+  for = "/*"
+    [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "geolocation=(), microphone=(), camera=()"
