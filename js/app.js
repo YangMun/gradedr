@@ -7,15 +7,16 @@ import { initTheme, initNavigation } from './ui.js';
 import { initSemesters } from './semesters.js';
 import { renderTargetSection } from './targetGpa.js';
 import { renderSimulatorSection } from './simulator.js';
+import { initCharts } from './charts.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
   initSemesters();          // renders tabs, loads subjects, wires form
   renderTargetSection();    // binds target GPA reverse calculator
   renderSimulatorSection(); // binds grade simulator
+  initCharts();             // lazy renders charts on section visit
   initNavigation();         // binds bottom nav, restores last section
 
   // Additional inits added by later feature branches:
-  // import { initCharts }   from './charts.js';    // feature/grade-visualization
   // import { importFromUrl } from './dataIO.js';   // feature/data-export-import
 });
