@@ -115,7 +115,7 @@ main                           ← 배포 브랜치 (Netlify 연결)
 
 ## 라이선스
 
-MIT License
+X
 
 ---
 
