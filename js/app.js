@@ -4,14 +4,16 @@
    ============================================================ */
 
 import { initTheme, initNavigation } from './ui.js';
+import { initSemesters } from './semesters.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
-  initNavigation();
+  initSemesters();  // renders tabs, loads subjects, wires form
+  initNavigation(); // binds bottom nav, restores last section
 
-  // Each feature branch adds its own import + init call here:
-  // import { initSemesters } from './semesters.js';   // feature/gpa-calculator
-  // import { renderTargetSection } from './targetGpa.js'; // feature/target-gpa
-  // import { renderSimulatorSection } from './simulator.js'; // feature/grade-simulator
-  // import { importFromUrl } from './dataIO.js';       // feature/data-export-import
+  // Additional inits added by later feature branches:
+  // import { renderTargetSection }   from './targetGpa.js';   // feature/target-gpa
+  // import { renderSimulatorSection } from './simulator.js';  // feature/grade-simulator
+  // import { initCharts }            from './charts.js';      // feature/grade-visualization
+  // import { importFromUrl }         from './dataIO.js';      // feature/data-export-import
 });
