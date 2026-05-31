@@ -1,0 +1,45 @@
+{
+  "name": "GradeR — 학점 계산기",
+  "short_name": "GradeR",
+  "description": "학점을 쉽게 계산하고 목표 학점을 계획해요. 4.5/4.3 만점제, 학기별 관리, 성적 시각화 지원",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fafafa",
+  "theme_color": "#6366f1",
+  "lang": "ko",
+  "categories": ["education", "utilities"],
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "학점 계산기",
+      "url": "/?section=calculator",
+      "description": "과목 성적 입력 및 GPA 계산"
+    },
+    {
+      "name": "목표 학점 역산기",
+      "url": "/?section=target",
+      "description": "목표 GPA 달성을 위한 필요 점수 계산"
+    }
+  ]
+}
