@@ -237,6 +237,35 @@
         <div class="result-value num" id="target-result-value">-</div>
         <div class="result-message" id="target-result-message"></div>
       </div>
+
+      <!-- Retake Impact Simulator -->
+      <div class="card">
+        <h3 class="card-title">재수강 효과 시뮬레이터</h3>
+        <p class="section-desc" style="margin-bottom: var(--s-4)">재수강 시 누적 평점이 얼마나 달라지는지 미리 확인해요</p>
+        <div class="form-stack">
+          <div class="form-group">
+            <label class="label-sm" for="retake-subject-select">과목 선택</label>
+            <select id="retake-subject-select" class="select">
+              <option value="">— 과목을 선택하세요 —</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="label-sm" for="retake-target-grade">목표 성적</label>
+            <select id="retake-target-grade" class="select"></select>
+          </div>
+        </div>
+        <div class="retake-result" id="retake-result" style="display:none" aria-live="polite">
+          <div class="retake-result-row">
+            <span class="retake-result-label">재수강 후 예상 평점</span>
+            <span class="retake-result-gpa num" id="retake-new-gpa">-</span>
+          </div>
+          <div class="retake-result-row">
+            <span class="retake-result-label">변화</span>
+            <span class="retake-delta" id="retake-delta">-</span>
+          </div>
+        </div>
+        <div id="retake-recommendations" class="retake-recs"></div>
+      </div>
     </section>
 
     <!-- ── 성적 시각화 ── -->
@@ -434,6 +463,14 @@
         <div class="form-group">
           <label class="label-sm" for="edit-grade">성적</label>
           <select id="edit-grade" class="select"></select>
+        </div>
+        <div class="form-group retake-toggle-group">
+          <span class="label-sm">재수강 과목</span>
+          <label class="toggle-label" for="edit-retake">
+            <input type="checkbox" id="edit-retake" class="toggle-input" role="switch" aria-label="재수강 과목 표시">
+            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            <span class="toggle-text">재수강으로 표시</span>
+          </label>
         </div>
       </div>
       <div class="modal-actions">
