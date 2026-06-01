@@ -228,7 +228,27 @@
 }
 
 .tab-item.active .tab-delete { display: flex; }
+.tab-item.active .tab-copy   { display: flex; }
 .tab-delete:hover { opacity: 1; background: var(--color-accent-medium); }
+
+.tab-copy {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-xs);
+  opacity: 0.5;
+  font-size: 11px;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+  background: none;
+  border: none;
+  color: currentColor;
+}
+
+.tab-copy:hover { opacity: 1; background: var(--color-accent-medium); }
 
 /* ── Scale Selector Card ─────────────────────────────────── */
 .scale-selector {
@@ -278,19 +298,52 @@
 
 /* Subject item — Toss transaction row style */
 .subject-item {
+  border-bottom: 1px solid var(--color-border-light);
+  position: relative;
+  overflow: hidden;
+  cursor: default;
+}
+
+.subject-item:last-child { border-bottom: none; }
+
+/* Swipe-reveal delete background */
+.subject-swipe-bg {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 72px;
+  background: var(--color-danger);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: #fff;
+  font-size: var(--text-xs);
+  font-weight: var(--fw-bold);
+  cursor: pointer;
+}
+
+.subject-swipe-bg i { font-size: var(--text-lg); }
+
+/* Inner wrapper — slides left on swipe */
+.subject-inner {
   display: flex;
   align-items: center;
   gap: var(--s-3);
   padding: var(--s-3) var(--s-4);
   min-height: 60px;
-  border-bottom: 1px solid var(--color-border-light);
-  position: relative;
-  cursor: default;
-  transition: background var(--t-fast);
+  background: var(--color-surface);
+  transition: transform var(--t-base) var(--ease-out);
+  will-change: transform;
 }
 
-.subject-item:last-child { border-bottom: none; }
-.subject-item:active     { background: var(--color-surface-2); }
+.subject-item.swipe-open .subject-inner {
+  transform: translateX(-72px);
+}
+
+.subject-inner:active { background: var(--color-surface-2); }
 
 /* Left colored accent bar */
 .subject-accent-bar {
@@ -333,6 +386,16 @@
   display: flex;
   align-items: center;
   gap: var(--s-1);
+}
+
+.subject-memo {
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-style: italic;
+  opacity: 0.8;
 }
 
 .subject-grade-badge {

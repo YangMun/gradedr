@@ -4,12 +4,14 @@
    ============================================================ */
 
 import {
-  getSemesters, saveSemesters, getSettings, patchSettings, generateId
+  getSemesters, saveSemesters, getSettings, patchSettings, generateId, saveSubjects
 } from './storage.js';
 import {
   setActiveSemId, attachSubjectFormHandler, renderSubjectList, updateGpaDisplay
 } from './calculator.js';
 import { showToast, openModal, closeModal, showConfirmModal } from './ui.js';
+
+let _copySourceId = null;
 
 // ── Init ──────────────────────────────────────────────────────
 
@@ -49,14 +51,34 @@ export function renderTabs(semesters, activeId) {
     // Use <span role="button"> instead of nested <button> to avoid invalid HTML nesting
     tab.innerHTML = `
       <span class="tab-label">${escHtml(sem.label)}</span>
+      <span class="tab-copy" role="button" tabindex="-1" aria-label="${escHtml(sem.label)} 복사">
+        <i class="ph-bold ph-copy"></i>
+      </span>
       <span class="tab-delete" role="button" tabindex="-1" aria-label="${escHtml(sem.label)} 삭제">
         <i class="ph-bold ph-x"></i>
       </span>
     `;
 
     tab.addEventListener('click', e => {
-      if (e.target.closest('.tab-delete')) return;
+      if (e.target.closest('.tab-delete') || e.target.closest('.tab-copy')) return;
       activateSemester(sem.id);
+    });
+
+    const copySpan = tab.querySelector('.tab-copy');
+    copySpan.addEventListener('click', e => {
+      e.stopPropagation();
+      _copySourceId = sem.id;
+      const input = document.getElementById('semester-label-input');
+      if (input) input.value = `${sem.label} (복사)`;
+      openModal('semester-modal');
+      setTimeout(() => input?.focus(), 50);
+    });
+    copySpan.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        e.stopPropagation();
+        copySpan.click();
+      }
     });
 
     const deleteSpan = tab.querySelector('.tab-delete');
@@ -108,6 +130,35 @@ function addSemester(label) {
   showToast(`${trimmed} 학기가 추가됐어요`, 'success', 2000);
 }
 
+// ── Copy Semester ─────────────────────────────────────────────
+
+function copySemester(sourceId, newLabel) {
+  const trimmed = newLabel.trim();
+  if (!trimmed) { showToast('학기 이름을 입력해주세요', 'warning'); return false; }
+
+  const semesters = getSemesters();
+  if (semesters.find(s => s.label === trimmed)) {
+    showToast('이미 같은 이름의 학기가 있어요', 'warning');
+    return false;
+  }
+
+  const source = semesters.find(s => s.id === sourceId);
+  if (!source) return false;
+
+  const newSem = {
+    id:         generateId('sem'),
+    label:      trimmed,
+    gradeScale: source.gradeScale,
+    subjects:   source.subjects.map(s => ({ ...s, id: generateId('subj') }))
+  };
+  semesters.push(newSem);
+  saveSemesters(semesters);
+  renderTabs(semesters, newSem.id);
+  activateSemester(newSem.id);
+  showToast(`${trimmed} 학기가 복사됐어요`, 'success', 2000);
+  return true;
+}
+
 // ── Delete Semester ───────────────────────────────────────────
 
 export function deleteSemester(semId) {
@@ -143,20 +194,22 @@ function bindSemesterModal() {
   const confirm = document.getElementById('semester-modal-confirm');
   const overlay = document.getElementById('semester-modal');
 
-  cancel?.addEventListener('click',  () => closeModal('semester-modal'));
-  overlay?.addEventListener('click', e => { if (e.target === overlay) closeModal('semester-modal'); });
-
-  confirm?.addEventListener('click', () => {
-    addSemester(input?.value || '');
-    closeModal('semester-modal');
+  cancel?.addEventListener('click',  () => { _copySourceId = null; closeModal('semester-modal'); });
+  overlay?.addEventListener('click', e => {
+    if (e.target === overlay) { _copySourceId = null; closeModal('semester-modal'); }
   });
 
+  const doConfirm = () => {
+    const ok = _copySourceId
+      ? copySemester(_copySourceId, input?.value || '')
+      : (addSemester(input?.value || ''), true);
+    if (ok !== false) { _copySourceId = null; closeModal('semester-modal'); }
+  };
+
+  confirm?.addEventListener('click', doConfirm);
+
   input?.addEventListener('keydown', e => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      addSemester(input.value);
-      closeModal('semester-modal');
-    }
+    if (e.key === 'Enter') { e.preventDefault(); doConfirm(); }
   });
 }
 

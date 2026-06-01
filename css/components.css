@@ -1000,3 +1000,45 @@
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
 }
+
+/* ── Insights ────────────────────────────────────────────── */
+#insights-container {
+  margin-bottom: var(--s-4);
+}
+
+.insights-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+
+.insight-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--text-xs);
+  font-weight: var(--fw-medium);
+  padding: var(--s-2) var(--s-3);
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+
+.insight-chip i { font-size: 13px; flex-shrink: 0; }
+
+.insight-positive {
+  background: color-mix(in srgb, var(--color-success) 10%, transparent);
+  color: var(--color-success);
+  border-color: color-mix(in srgb, var(--color-success) 25%, transparent);
+}
+
+.insight-warning {
+  background: color-mix(in srgb, var(--color-warning) 10%, transparent);
+  color: var(--color-warning);
+  border-color: color-mix(in srgb, var(--color-warning) 25%, transparent);
+}
+
+.insight-neutral {
+  background: var(--color-surface-2);
+  color: var(--color-text-secondary);
+  border-color: var(--color-border);
+}
