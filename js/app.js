@@ -11,6 +11,7 @@ import { renderSimulatorSection } from './simulator.js';
 import { initCharts } from './charts.js';
 import { importFromUrl, initDataSection } from './dataIO.js';
 import { initGraduation } from './graduation.js';
+import { initScholarship } from './scholarship.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   importFromUrl();           // must run first: may populate storage from ?d= URL param
@@ -22,5 +23,6 @@ document.addEventListener('DOMContentLoaded', () => {
   initCharts();              // lazy render charts on section visit
   initDataSection();         // bind export/import/share/reset buttons
   initGraduation();          // bind graduation credits goal
+  initScholarship();         // bind scholarship tracker
   initNavigation();          // bind bottom nav, restore last section
 });
