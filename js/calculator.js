@@ -121,6 +121,7 @@ export function renderSubjectList(semId) {
         <div class="subject-name">
           ${escHtml(subj.name)}
           <span class="type-chip ${typeCls}">${typeLabel}</span>
+          ${subj.retake ? '<span class="retake-badge">재수강</span>' : ''}
         </div>
         <div class="subject-meta">${subj.credits}학점 · ${subj.points.toFixed(1)}점</div>
       </div>
@@ -284,13 +285,13 @@ export function deleteSubject(semId, subjectId) {
   });
 }
 
-export function updateSubject(semId, subjectId, { name, credits, grade, type }) {
+export function updateSubject(semId, subjectId, { name, credits, grade, type, retake }) {
   const scale    = getSemesterScale(semId);
   const useScale = scale === '100' ? '4.5' : scale;
   const points   = getPoints(useScale, grade);
   const subjects = getSubjects(semId).map(s =>
     s.id === subjectId
-      ? { ...s, name, credits: Number(credits), grade, points, type: type || s.type || 'major' }
+      ? { ...s, name, credits: Number(credits), grade, points, type: type || s.type || 'major', retake: !!retake }
       : s
   );
   saveSubjects(semId, subjects);
@@ -325,6 +326,9 @@ function openEditModal(semId, subjectId) {
 
   const editType = document.getElementById('edit-type');
   if (editType) editType.value = subj.type || 'major';
+
+  const editRetake = document.getElementById('edit-retake');
+  if (editRetake) editRetake.checked = !!subj.retake;
 
   openModal('edit-modal');
 }
@@ -408,8 +412,9 @@ export function attachSubjectFormHandler(semId) {
       const credits = document.getElementById('edit-credits').value;
       const grade   = document.getElementById('edit-grade').value;
       const type    = document.getElementById('edit-type')?.value || 'major';
+      const retake  = document.getElementById('edit-retake')?.checked ?? false;
       if (!name) { showToast('과목명을 입력해주세요', 'warning'); return; }
-      updateSubject(semId, id, { name, credits, grade, type });
+      updateSubject(semId, id, { name, credits, grade, type, retake });
       closeModal('edit-modal');
     });
   }
