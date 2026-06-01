@@ -37,6 +37,16 @@ export function calcCumulativeGpa(semesters) {
   return calcGpa(allSubjects);
 }
 
+export function calcGpaByType(semesters) {
+  const all = semesters.flatMap(s => s.subjects);
+  const majorSubjects   = all.filter(s => (s.type || 'major') === 'major');
+  const generalSubjects = all.filter(s => (s.type || 'major') === 'general');
+  return {
+    major:   calcGpa(majorSubjects),
+    general: calcGpa(generalSubjects)
+  };
+}
+
 function dispatchDataChanged() {
   window.dispatchEvent(new CustomEvent('gradedr:data-changed'));
 }
@@ -151,8 +161,45 @@ export function updateGpaDisplay(semId) {
   credEl    && (credEl.textContent    = cumCredits);
   inlineEl  && (inlineEl.textContent  = allSubjects.length > 0 ? cumGpa.toFixed(2) : '-');
 
+  renderTypeGpaRow(allSemesters);
   renderSemStats(semId, subjects);
   updateGraduationBar(cumCredits);
+}
+
+function renderTypeGpaRow(allSemesters) {
+  const row = document.getElementById('type-gpa-row');
+  if (!row) return;
+
+  const { major, general } = calcGpaByType(allSemesters);
+  const hasMajor   = major.totalCredits > 0;
+  const hasGeneral = general.totalCredits > 0;
+
+  if (!hasMajor && !hasGeneral) {
+    row.style.display = 'none';
+    return;
+  }
+
+  row.style.display = '';
+  row.innerHTML = '';
+
+  if (hasMajor) {
+    const chip = document.createElement('span');
+    chip.className = 'type-gpa-chip type-gpa-major';
+    chip.innerHTML = `<span class="type-gpa-label">전공</span><span class="type-gpa-value">${major.gpa.toFixed(2)}</span>`;
+    row.appendChild(chip);
+  }
+  if (hasMajor && hasGeneral) {
+    const sep = document.createElement('span');
+    sep.className = 'type-gpa-sep';
+    sep.textContent = '·';
+    row.appendChild(sep);
+  }
+  if (hasGeneral) {
+    const chip = document.createElement('span');
+    chip.className = 'type-gpa-chip type-gpa-general';
+    chip.innerHTML = `<span class="type-gpa-label">교양</span><span class="type-gpa-value">${general.gpa.toFixed(2)}</span>`;
+    row.appendChild(chip);
+  }
 }
 
 function renderSemStats(semId, subjects) {
