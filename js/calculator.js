@@ -37,6 +37,16 @@ export function calcCumulativeGpa(semesters) {
   return calcGpa(allSubjects);
 }
 
+export function calcGpaByType(semesters) {
+  const all = semesters.flatMap(s => s.subjects);
+  const majorSubjects   = all.filter(s => (s.type || 'major') === 'major');
+  const generalSubjects = all.filter(s => (s.type || 'major') === 'general');
+  return {
+    major:   calcGpa(majorSubjects),
+    general: calcGpa(generalSubjects)
+  };
+}
+
 function dispatchDataChanged() {
   window.dispatchEvent(new CustomEvent('gradedr:data-changed'));
 }
@@ -106,27 +116,39 @@ export function renderSubjectList(semId) {
     item.setAttribute('role', 'listitem');
     item.dataset.id = subj.id;
     item.innerHTML = `
-      <div class="subject-accent-bar" aria-hidden="true"></div>
-      <div class="subject-info">
-        <div class="subject-name">
-          ${escHtml(subj.name)}
-          <span class="type-chip ${typeCls}">${typeLabel}</span>
-        </div>
-        <div class="subject-meta">${subj.credits}학점 · ${subj.points.toFixed(1)}점</div>
+      <div class="subject-swipe-bg" aria-hidden="true">
+        <i class="ph-bold ph-trash"></i><span>삭제</span>
       </div>
-      <span class="subject-grade-badge">${escHtml(subj.grade.replace(/^(\d+)점 → /, ''))}</span>
-      <div class="subject-actions">
-        <button class="subject-action-btn edit" aria-label="${escHtml(subj.name)} 수정">
-          <i class="ph-bold ph-pencil-simple"></i>
-        </button>
-        <button class="subject-action-btn delete" aria-label="${escHtml(subj.name)} 삭제">
-          <i class="ph-bold ph-trash"></i>
-        </button>
+      <div class="subject-inner">
+        <div class="subject-accent-bar" aria-hidden="true"></div>
+        <div class="subject-info">
+          <div class="subject-name">
+            ${escHtml(subj.name)}
+            <span class="type-chip ${typeCls}">${typeLabel}</span>
+            ${subj.retake ? '<span class="retake-badge">재수강</span>' : ''}
+          </div>
+          <div class="subject-meta">${subj.credits}학점 · ${subj.points.toFixed(1)}점</div>
+          ${subj.memo ? `<div class="subject-memo">${escHtml(subj.memo)}</div>` : ''}
+        </div>
+        <span class="subject-grade-badge">${escHtml(subj.grade.replace(/^(\d+)점 → /, ''))}</span>
+        <div class="subject-actions">
+          <button class="subject-action-btn edit" aria-label="${escHtml(subj.name)} 수정">
+            <i class="ph-bold ph-pencil-simple"></i>
+          </button>
+          <button class="subject-action-btn delete" aria-label="${escHtml(subj.name)} 삭제">
+            <i class="ph-bold ph-trash"></i>
+          </button>
+        </div>
       </div>
     `;
 
     item.querySelector('.edit').addEventListener('click', () => openEditModal(semId, subj.id));
-    item.querySelector('.delete').addEventListener('click', () => deleteSubject(semId, subj.id));
+    item.querySelector('.subject-inner .delete').addEventListener('click', () => deleteSubject(semId, subj.id));
+    item.querySelector('.subject-swipe-bg').addEventListener('click', () => {
+      closeAllSwipes();
+      deleteSubject(semId, subj.id);
+    });
+    addSwipeGesture(item);
 
     list.appendChild(item);
   }
@@ -151,8 +173,45 @@ export function updateGpaDisplay(semId) {
   credEl    && (credEl.textContent    = cumCredits);
   inlineEl  && (inlineEl.textContent  = allSubjects.length > 0 ? cumGpa.toFixed(2) : '-');
 
+  renderTypeGpaRow(allSemesters);
   renderSemStats(semId, subjects);
   updateGraduationBar(cumCredits);
+}
+
+function renderTypeGpaRow(allSemesters) {
+  const row = document.getElementById('type-gpa-row');
+  if (!row) return;
+
+  const { major, general } = calcGpaByType(allSemesters);
+  const hasMajor   = major.totalCredits > 0;
+  const hasGeneral = general.totalCredits > 0;
+
+  if (!hasMajor && !hasGeneral) {
+    row.style.display = 'none';
+    return;
+  }
+
+  row.style.display = '';
+  row.innerHTML = '';
+
+  if (hasMajor) {
+    const chip = document.createElement('span');
+    chip.className = 'type-gpa-chip type-gpa-major';
+    chip.innerHTML = `<span class="type-gpa-label">전공</span><span class="type-gpa-value">${major.gpa.toFixed(2)}</span>`;
+    row.appendChild(chip);
+  }
+  if (hasMajor && hasGeneral) {
+    const sep = document.createElement('span');
+    sep.className = 'type-gpa-sep';
+    sep.textContent = '·';
+    row.appendChild(sep);
+  }
+  if (hasGeneral) {
+    const chip = document.createElement('span');
+    chip.className = 'type-gpa-chip type-gpa-general';
+    chip.innerHTML = `<span class="type-gpa-label">교양</span><span class="type-gpa-value">${general.gpa.toFixed(2)}</span>`;
+    row.appendChild(chip);
+  }
 }
 
 function renderSemStats(semId, subjects) {
@@ -237,13 +296,15 @@ export function deleteSubject(semId, subjectId) {
   });
 }
 
-export function updateSubject(semId, subjectId, { name, credits, grade, type }) {
+export function updateSubject(semId, subjectId, { name, credits, grade, type, retake, memo }) {
   const scale    = getSemesterScale(semId);
   const useScale = scale === '100' ? '4.5' : scale;
   const points   = getPoints(useScale, grade);
   const subjects = getSubjects(semId).map(s =>
     s.id === subjectId
-      ? { ...s, name, credits: Number(credits), grade, points, type: type || s.type || 'major' }
+      ? { ...s, name, credits: Number(credits), grade, points,
+          type: type || s.type || 'major', retake: !!retake,
+          memo: (memo ?? s.memo ?? '').trim() }
       : s
   );
   saveSubjects(semId, subjects);
@@ -278,6 +339,12 @@ function openEditModal(semId, subjectId) {
 
   const editType = document.getElementById('edit-type');
   if (editType) editType.value = subj.type || 'major';
+
+  const editRetake = document.getElementById('edit-retake');
+  if (editRetake) editRetake.checked = !!subj.retake;
+
+  const editMemo = document.getElementById('edit-memo');
+  if (editMemo) editMemo.value = subj.memo || '';
 
   openModal('edit-modal');
 }
@@ -361,8 +428,10 @@ export function attachSubjectFormHandler(semId) {
       const credits = document.getElementById('edit-credits').value;
       const grade   = document.getElementById('edit-grade').value;
       const type    = document.getElementById('edit-type')?.value || 'major';
+      const retake  = document.getElementById('edit-retake')?.checked ?? false;
+      const memo    = document.getElementById('edit-memo')?.value ?? '';
       if (!name) { showToast('과목명을 입력해주세요', 'warning'); return; }
-      updateSubject(semId, id, { name, credits, grade, type });
+      updateSubject(semId, id, { name, credits, grade, type, retake, memo });
       closeModal('edit-modal');
     });
   }
@@ -371,6 +440,50 @@ export function attachSubjectFormHandler(semId) {
 function syncScaleRadios(scale) {
   document.querySelectorAll('input[name="grade-scale"]').forEach(radio => {
     radio.checked = radio.value === scale;
+  });
+}
+
+// ── Swipe to Delete ───────────────────────────────────────────
+
+function closeAllSwipes() {
+  document.querySelectorAll('.subject-item.swipe-open').forEach(el => {
+    el.classList.remove('swipe-open');
+    const inner = el.querySelector('.subject-inner');
+    if (inner) { inner.style.transition = ''; inner.style.transform = ''; }
+  });
+}
+
+function addSwipeGesture(item) {
+  const inner = item.querySelector('.subject-inner');
+  const REVEAL = 72;
+  let startX = 0;
+  let moved  = false;
+
+  inner.addEventListener('touchstart', e => {
+    closeAllSwipes();
+    startX = e.touches[0].clientX;
+    moved  = false;
+    inner.style.transition = 'none';
+  }, { passive: true });
+
+  inner.addEventListener('touchmove', e => {
+    const dx = e.touches[0].clientX - startX;
+    if (!moved && Math.abs(dx) < 6) return;
+    moved = true;
+    inner.style.transform = `translateX(${Math.max(-REVEAL, Math.min(0, dx))}px)`;
+  }, { passive: true });
+
+  inner.addEventListener('touchend', e => {
+    inner.style.transition = '';
+    if (!moved) return;
+    const dx = e.changedTouches[0].clientX - startX;
+    if (dx < -REVEAL / 2) {
+      inner.style.transform = `translateX(-${REVEAL}px)`;
+      item.classList.add('swipe-open');
+    } else {
+      inner.style.transform = '';
+      item.classList.remove('swipe-open');
+    }
   });
 }
 
