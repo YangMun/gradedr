@@ -5,7 +5,7 @@
    ============================================================ */
 
 const STORAGE_KEY = 'gradedr_data';
-const CURRENT_VERSION = 2;
+const CURRENT_VERSION = 3;
 
 function makeDefaultData() {
   return {
@@ -15,7 +15,8 @@ function makeDefaultData() {
       defaultGradeScale: '4.5',
       activeSection: 'section-calculator',
       activeSemesterId: 'sem_1_1',
-      graduationCredits: 0
+      graduationCredits: 0,
+      scholarships: []
     },
     semesters: [
       { id: 'sem_1_1', label: '1-1학기', gradeScale: '4.5', subjects: [] },
@@ -30,25 +31,38 @@ function migrateIfNeeded(data) {
   if (!data || typeof data !== 'object') return makeDefaultData();
   if (typeof data.version !== 'number') return makeDefaultData();
 
-  // v1 → v2: add graduationCredits to settings, add type field to subjects
+  // v1 → v2: graduationCredits + subject.type
   if (data.version < 2) {
     if (!data.settings) data.settings = {};
-    if (data.settings.graduationCredits === undefined) {
-      data.settings.graduationCredits = 0;
-    }
+    if (data.settings.graduationCredits === undefined) data.settings.graduationCredits = 0;
     if (Array.isArray(data.semesters)) {
       data.semesters.forEach(sem => {
         if (Array.isArray(sem.subjects)) {
-          sem.subjects.forEach(s => {
-            if (!s.type) s.type = 'major';
-          });
+          sem.subjects.forEach(s => { if (!s.type) s.type = 'major'; });
         }
       });
     }
     data.version = 2;
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (_) {}
   }
 
+  // v2 → v3: scholarships + subject.retake + subject.memo
+  if (data.version < 3) {
+    if (!data.settings) data.settings = {};
+    if (!Array.isArray(data.settings.scholarships)) data.settings.scholarships = [];
+    if (Array.isArray(data.semesters)) {
+      data.semesters.forEach(sem => {
+        if (Array.isArray(sem.subjects)) {
+          sem.subjects.forEach(s => {
+            if (s.retake === undefined) s.retake = false;
+            if (s.memo === undefined) s.memo = '';
+          });
+        }
+      });
+    }
+    data.version = 3;
+  }
+
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (_) {}
   return data;
 }
 
